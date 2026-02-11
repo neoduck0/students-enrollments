@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.name if student else 'Student Not Found' }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        {% if student %}
+        <!-- Student Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>{{ student.name }}</h1>
+            <div>
+                <a href="{{ url_for('students') }}" class="btn btn-secondary">← Back to Students</a>
+            </div>
+        </div>
+
+        <!-- Student Information Cards -->
+        <div class="row">
+            <!-- Personal Information -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Personal Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Student ID:</strong></td>
+                                <td>{{ student.id }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Name:</strong></td>
+                                <td>{{ student.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Gender:</strong></td>
+                                <td>{{ student.gender }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Nationality:</strong></td>
+                                <td>{{ student.nationality }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Birthday:</strong></td>
+                                <td>{{ student.birthday }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Ethnicity:</strong></td>
+                                <td>{{ student.ethnicity }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Province:</strong></td>
+                                <td>{{ student.province }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Contact Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Card ID:</strong></td>
+                                <td>{{ student.card_id }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Phone:</strong></td>
+                                <td>{{ student.phone }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Mother's Name:</strong></td>
+                                <td>{{ student.mother_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Father's Phone:</strong></td>
+                                <td>{{ student.father_phone }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Academic Information -->
+        <div class="row">
+            <div class="col-md-8 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Academic Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Faculty:</strong></td>
+                                <td>{{ student.faculty }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Major:</strong></td>
+                                <td>{{ student.major }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Current Year:</strong></td>
+                                <td>{{ student.year if student.year else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Study Schedule:</strong></td>
+                                <td>{{ student.study_schedule.capitalize() }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Repeat Years:</strong></td>
+                                <td>{{ student.repeat_years }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Admission Session:</strong></td>
+                                <td>{{ student.admission_session }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- School Background -->
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">School Background</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Focus:</strong></td>
+                                <td>{{ student.school_focus }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Grad Session:</strong></td>
+                                <td>{{ student.school_grad_session }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Results:</strong></td>
+                                <td>{{ student.school_results }}%</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disability Information (if applicable) -->
+        {% if student.is_disabled == 1 %}
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Disability Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Disability:</strong> {{ student.disability }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Cause:</strong> {{ student.disability_cause }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('students') }}" class="btn btn-secondary">← Back to List</a>
+                    <!-- Future: Edit and Delete buttons can be added here -->
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Student Not Found -->
+        <div class="alert alert-danger">
+            <h3>Student Not Found</h3>
+            <p>The student with ID {{ student_id if student_id else 'unknown' }} could not be found.</p>
+            <a href="{{ url_for('students') }}" class="btn btn-primary">Back to Students</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

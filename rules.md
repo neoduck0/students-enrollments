@@ -1,0 +1,1 @@
+- No manual CSS files, only use bootstrap classes
