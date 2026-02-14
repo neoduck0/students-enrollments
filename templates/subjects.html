@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Students List{% endblock %}
+{% block title %}Subjects List{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <h1 class="mb-4">Students</h1>
+        <h1 class="mb-4">Subjects</h1>
 
         <!-- Alert Display -->
         {% if alert_type and alert_message %}
@@ -17,35 +17,31 @@
         
         <!-- Search Bar -->
         <div class="mb-4 d-flex gap-2">
-            <input type="text" id="studentSearch" class="form-control" placeholder="Search students by name...">
-            <a href="{{ url_for('add_student') }}" class="btn btn-primary">Add</a>
+            <input type="text" id="subjectSearch" class="form-control" placeholder="Search subjects by name...">
+            <a href="{{ url_for('add_subject') }}" class="btn btn-primary">Add</a>
         </div>
         
-        <!-- Students Table -->
-        {% if students %}
+        <!-- Subjects Table -->
+        {% if subjects %}
         <div class="table-responsive">
             <table class="table table-hover table-striped">
                 <thead class="table-dark">
                     <tr>
+                        <th>Semester</th>
+                        <th>Code</th>
                         <th>Name</th>
-                        <th>Faculty</th>
-                        <th>Major</th>
-                        <th>Year</th>
-                        <th>Phone</th>
+                        <th>Credit Hours</th>
+                        <th>Structure</th>
                     </tr>
                 </thead>
-                <tbody id="studentsTableBody">
-                    {% for student in students %}
-                    <tr class="student-row" data-student-id="{{ student.id }}">
-                        <td>
-                            <a href="{{ url_for('student', student_id=student.id) }}" class="text-decoration-none">
-                                <span class="student-name">{{ student.name }}</span>
-                            </a>
-                        </td>
-                        <td>{{ student.faculty }}</td>
-                        <td>{{ student.major }}</td>
-                        <td>{{ student.year if student.year else 'N/A' }}</td>
-                        <td>{{ student.phone }}</td>
+                <tbody id="subjectsTableBody">
+                    {% for subject in subjects %}
+                    <tr class="subject-row">
+                        <td>{{ subject.semester }}</td>
+                        <td>{{ subject.code }}</td>
+                        <td><a href="{{ url_for('view_subject', subject_id=subject.id) }}" class="subject-name text-decoration-none">{{ subject.name }}</a></td>
+                        <td>{{ subject.credit_h }}</td>
+                        <td>{{ subject.structure }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -55,13 +51,13 @@
         <!-- Results Count -->
         <div class="mt-3">
             <small class="text-muted">
-                <span id="visibleCount">{{ students|length }}</span> of {{ students|length }} students shown
+                <span id="visibleCount">{{ subjects|length }}</span> of {{ subjects|length }} subjects shown
             </small>
         </div>
         {% else %}
         <div class="alert alert-info">
-            <h5>No Students Found</h5>
-            <p>There are no students in the database yet.</p>
+            <h5>No Subjects Found</h5>
+            <p>There are no subjects in the database yet.</p>
         </div>
         {% endif %}
     </div>
@@ -69,19 +65,19 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('studentSearch');
-    const studentRows = document.querySelectorAll('.student-row');
+    const searchInput = document.getElementById('subjectSearch');
+    const subjectRows = document.querySelectorAll('.subject-row');
     const visibleCountSpan = document.getElementById('visibleCount');
-    const totalStudents = studentRows.length;
+    const totalSubjects = subjectRows.length;
     
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase().trim();
         let visibleCount = 0;
         
-        studentRows.forEach(row => {
-            const studentName = row.querySelector('.student-name').textContent.toLowerCase();
+        subjectRows.forEach(row => {
+            const subjectName = row.querySelector('.subject-name').textContent.toLowerCase();
             
-            if (searchTerm === '' || studentName.includes(searchTerm)) {
+            if (searchTerm === '' || subjectName.includes(searchTerm)) {
                 row.style.display = '';
                 visibleCount++;
             } else {
@@ -89,11 +85,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Update count
         visibleCountSpan.textContent = visibleCount;
         
-        // Show/hide "no results" message if needed
-        if (visibleCount === 0 && totalStudents > 0) {
+        if (visibleCount === 0 && totalSubjects > 0) {
             showNoResultsMessage(searchTerm);
         } else {
             hideNoResultsMessage();
@@ -101,19 +95,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function showNoResultsMessage(searchTerm) {
-        // Remove existing no-results message if any
         hideNoResultsMessage();
         
-        // Create no-results message
         const noResultsDiv = document.createElement('div');
         noResultsDiv.id = 'noResultsMessage';
         noResultsDiv.className = 'alert alert-warning mt-3';
         noResultsDiv.innerHTML = `
-            <h6>No students found matching "${searchTerm}"</h6>
+            <h6>No subjects found matching "${searchTerm}"</h6>
             <p>Try adjusting your search terms.</p>
         `;
         
-        // Insert after the table
         const table = document.querySelector('.table-responsive');
         table.parentNode.insertBefore(noResultsDiv, table.nextSibling);
     }

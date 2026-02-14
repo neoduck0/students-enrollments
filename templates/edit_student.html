@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Add Student{% endblock %}
+{% block title %}Edit Student{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
         <!-- Header with Buttons -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Add New Student</h1>
+            <h1>Edit Student</h1>
             <div class="d-flex gap-2">
-                <button type="submit" form="addForm" class="btn btn-primary">Add Student</button>
-                <a href="{{ url_for('students') }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" form="editForm" class="btn btn-primary">Confirm</button>
+                <a href="{{ url_for('student', student_id=student.id) }}" class="btn btn-secondary">Go Back</a>
             </div>
         </div>
         
@@ -33,8 +33,8 @@
         </div>
         {% endif %}
         
-        <!-- Add Student Form -->
-        <form method="POST" id="addForm" class="needs-validation" novalidate>
+        <!-- Edit Student Form -->
+        <form method="POST" action="{{ url_for('edit_student', student_id=student.id) }}" id="editForm" class="needs-validation" novalidate>
             <!-- Personal Information Section -->
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
@@ -44,7 +44,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ student.name }}" required>
                             <div class="invalid-feedback">
                                 Please provide a valid name.
                             </div>
@@ -53,8 +53,8 @@
                             <label for="gender" class="form-label">Gender</label>
                             <select class="form-select" id="gender" name="gender" required>
                                 <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
+                                <option value="Male" {% if student.gender == 'Male' %}selected{% endif %}>Male</option>
+                                <option value="Female" {% if student.gender == 'Female' %}selected{% endif %}>Female</option>
                             </select>
                             <div class="invalid-feedback">
                                 Please select a gender.
@@ -64,14 +64,14 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="nationality" class="form-label">Nationality</label>
-                            <input type="text" class="form-control" id="nationality" name="nationality" required>
+                            <input type="text" class="form-control" id="nationality" name="nationality" value="{{ student.nationality }}" required>
                             <div class="invalid-feedback">
                                 Please provide nationality.
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="birthday" class="form-label">Date of Birth</label>
-                            <input type="date" class="form-control" id="birthday" name="birthday" required>
+                            <input type="date" class="form-control" id="birthday" name="birthday" value="{{ student.birthday }}" required>
                             <div class="invalid-feedback">
                                 Please provide a valid date of birth.
                             </div>
@@ -80,14 +80,14 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="ethnicity" class="form-label">Ethnicity</label>
-                            <input type="text" class="form-control" id="ethnicity" name="ethnicity" required>
+                            <input type="text" class="form-control" id="ethnicity" name="ethnicity" value="{{ student.ethnicity }}" required>
                             <div class="invalid-feedback">
                                 Please provide ethnicity.
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="province" class="form-label">Province/State</label>
-                            <input type="text" class="form-control" id="province" name="province" required>
+                            <input type="text" class="form-control" id="province" name="province" value="{{ student.province }}" required>
                             <div class="invalid-feedback">
                                 Please provide province/state.
                             </div>
@@ -97,7 +97,7 @@
                         <div class="col-md-6 mb-3">
                             <label for="unified_card_id" class="form-label">Unified Card ID</label>
                             <input type="text" class="form-control" id="unified_card_id" name="unified_card_id" 
-                                   pattern="[A-Za-z0-9]+" required>
+                                   value="{{ student.unified_card_id }}" pattern="[A-Za-z0-9]+" required>
                             <div class="invalid-feedback">
                                 Please provide a valid student ID (alphanumeric only).
                             </div>
@@ -105,7 +105,7 @@
                         <div class="col-md-6 mb-3">
                             <label for="phone" class="form-label">Phone Number</label>
                             <input type="tel" class="form-control" id="phone" name="phone" 
-                                   pattern="[0-9\-\+\s]+" required>
+                                   value="{{ student.phone }}" pattern="[0-9\-\+\s]+" required>
                             <div class="invalid-feedback">
                                 Please provide a valid phone number.
                             </div>
@@ -114,7 +114,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="mother_name" class="form-label">Mother's Name</label>
-                            <input type="text" class="form-control" id="mother_name" name="mother_name" required>
+                            <input type="text" class="form-control" id="mother_name" name="mother_name" value="{{ student.mother_name }}" required>
                             <div class="invalid-feedback">
                                 Please provide mother's name.
                             </div>
@@ -122,7 +122,7 @@
                         <div class="col-md-6 mb-3">
                             <label for="father_phone" class="form-label">Father's Phone</label>
                             <input type="tel" class="form-control" id="father_phone" name="father_phone" 
-                                   pattern="[0-9\-\+\s]+" required>
+                                   value="{{ student.father_phone }}" pattern="[0-9\-\+\s]+" required>
                             <div class="invalid-feedback">
                                 Please provide a valid father's phone number.
                             </div>
@@ -140,14 +140,14 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="faculty" class="form-label">Faculty</label>
-                            <input type="text" class="form-control" id="faculty" name="faculty" required>
+                            <input type="text" class="form-control" id="faculty" name="faculty" value="{{ student.faculty }}" required>
                             <div class="invalid-feedback">
                                 Please provide faculty.
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="major" class="form-label">Major</label>
-                            <input type="text" class="form-control" id="major" name="major" required>
+                            <input type="text" class="form-control" id="major" name="major" value="{{ student.major }}" required>
                             <div class="invalid-feedback">
                                 Please provide major.
                             </div>
@@ -157,7 +157,7 @@
                         <div class="col-md-3 mb-3">
                             <label for="year" class="form-label">Year</label>
                             <input type="number" class="form-control" id="year" name="year" 
-                                   min="1" max="10" required>
+                                   value="{{ student.year if student.year else '' }}" min="1" max="10" required>
                             <div class="invalid-feedback">
                                 Please provide a valid year (1-10).
                             </div>
@@ -166,8 +166,8 @@
                             <label for="study_schedule" class="form-label">Study Schedule</label>
                             <select class="form-select" id="study_schedule" name="study_schedule" required>
                                 <option value="">Select Schedule</option>
-                                <option value="day">Day</option>
-                                <option value="evening">Evening</option>
+                                <option value="day" {% if student.study_schedule == 'day' %}selected{% endif %}>Day</option>
+                                <option value="evening" {% if student.study_schedule == 'evening' %}selected{% endif %}>Evening</option>
                             </select>
                             <div class="invalid-feedback">
                                 Please select study schedule.
@@ -176,7 +176,7 @@
 
                         <div class="col-md-3 mb-3">
                             <label for="admission_type" class="form-label">Admission Type</label>
-                            <input type="text" class="form-control" id="admission_type" name="admission_type" required>
+                            <input type="text" class="form-control" id="admission_type" name="admission_type" value="{{ student.admission_type }}" required>
                             <div class="invalid-feedback">
                                 Please provide admission type.
                             </div>
@@ -184,7 +184,7 @@
 
                         <div class="col-md-3 mb-3">
                             <label for="admission_session" class="form-label">Admission Session</label>
-                            <input type="text" class="form-control" id="admission_session" name="admission_session" required>
+                            <input type="text" class="form-control" id="admission_session" name="admission_session" value="{{ student.admission_session }}" required>
                             <div class="invalid-feedback">
                                 Please provide admission session.
                             </div>
@@ -202,14 +202,14 @@
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label for="school_study_domain" class="form-label">School Study Domain</label>
-                            <input type="text" class="form-control" id="school_study_domain" name="school_study_domain" required>
+                            <input type="text" class="form-control" id="school_study_domain" name="school_study_domain" value="{{ student.school_study_domain }}" required>
                             <div class="invalid-feedback">
                                 Please provide school study domain.
                             </div>
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="school_grad_session" class="form-label">School Graduation Session</label>
-                            <input type="text" class="form-control" id="school_grad_session" name="school_grad_session" required>
+                            <input type="text" class="form-control" id="school_grad_session" name="school_grad_session" value="{{ student.school_grad_session }}" required>
                             <div class="invalid-feedback">
                                 Please provide school graduation session.
                             </div>
@@ -217,12 +217,12 @@
                         <div class="col-md-4 mb-3">
                             <label for="school_results" class="form-label">School Results (%)</label>
                             <input type="number" class="form-control" id="school_results" name="school_results" 
-                                   min="0" max="100" step="0.1" value="0.0">
+                                   value="{{ student.school_results }}" min="0" max="100" step="0.1">
                         </div>
                         <div class="col-md-4 mb-3">
                             <label for="years_failed" class="form-label">Years Failed</label>
                             <input type="number" class="form-control" id="years_failed" name="years_failed" 
-                                   min="0" max="10" value="0">
+                                   value="{{ student.years_failed if student.years_failed else 0 }}" min="0" max="10">
                         </div>
                     </div>
                 </div>
@@ -238,26 +238,26 @@
                         <div class="col-md-3 mb-3">
                             <label for="social_care_network" class="form-label">Social Care Network?</label>
                             <select class="form-select" id="social_care_network" name="social_care_network">
-                                <option value="0">No</option>
-                                <option value="1">Yes</option>
+                                <option value="0" {% if student.social_care_network == 0 %}selected{% endif %}>No</option>
+                                <option value="1" {% if student.social_care_network == 1 %}selected{% endif %}>Yes</option>
                             </select>
                         </div>
                         <div class="col-md-3 mb-3">
                             <label for="is_disabled" class="form-label">Disabled?</label>
                             <select class="form-select" id="is_disabled" name="is_disabled">
-                                <option value="0">No</option>
-                                <option value="1">Yes</option>
+                                <option value="0" {% if student.is_disabled == 0 %}selected{% endif %}>No</option>
+                                <option value="1" {% if student.is_disabled == 1 %}selected{% endif %}>Yes</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="disability" class="form-label">Disability Type</label>
                             <input type="text" class="form-control" id="disability" name="disability" 
-                                   placeholder="If applicable">
+                                   value="{{ student.disability if student.disability else '' }}" placeholder="If applicable">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="disability_cause" class="form-label">Disability Cause</label>
                             <input type="text" class="form-control" id="disability_cause" name="disability_cause" 
-                                   placeholder="If applicable">
+                                   value="{{ student.disability_cause if student.disability_cause else '' }}" placeholder="If applicable">
                         </div>
                     </div>
                 </div>
@@ -267,7 +267,6 @@
 </div>
 
 <script>
-// Bootstrap form validation
 (function() {
     'use strict';
     var forms = document.querySelectorAll('.needs-validation');

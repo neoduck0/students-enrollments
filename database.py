@@ -23,20 +23,22 @@ class Student:
         birthday,
         ethnicity,
         province,
-        card_id,
+        unified_card_id,
         phone,
         faculty,
         major,
         year,
         study_schedule,
-        repeat_years=0,
+        years_failed=0,
+        admission_type="",
         admission_session="",
-        school_focus="",
+        school_study_domain="",
         school_grad_session="",
         school_results=0.0,
         mother_name="",
         father_phone="",
         is_disabled=0,
+        social_care_network=0,
         disability="",
         disability_cause="",
         id=None,
@@ -48,33 +50,37 @@ class Student:
         self.birthday = birthday
         self.ethnicity = ethnicity
         self.province = province
-        self.card_id = card_id
+        self.unified_card_id = unified_card_id
         self.phone = phone
         self.faculty = faculty
         self.major = major
         self.year = int(year) if year is not None else None
         self.study_schedule = study_schedule
-        self.repeat_years = repeat_years
         self.admission_session = admission_session
-        self.school_focus = school_focus
+        self.school_study_domain = school_study_domain
         self.school_grad_session = school_grad_session
         self.school_results = school_results
+        self.years_failed = years_failed
+        self.admission_type = admission_type
         self.mother_name = capitalize_name(mother_name)
         self.father_phone = father_phone
         self.is_disabled = is_disabled
+        self.social_care_network = social_care_network
         self.disability = disability
         self.disability_cause = disability_cause
 
 
 class Subject:
-    def __init__(self, year, semester, code, name, credit_h, structure, id=None):
+    def __init__(
+        self, semester, code, name, credit_h, structure, prerequisite=None, id=None
+    ):
         self.id = id
-        self.year = year
         self.semester = semester
         self.code = code
         self.name = name
         self.credit_h = credit_h
         self.structure = structure
+        self.prerequisite = prerequisite
 
 
 # GENERAL
@@ -100,7 +106,7 @@ def get_db_cursor():
         conn.close()
 
 
-def init_database():
+def db_init():
     """Initialize the database with required tables. Returns True if successful, False if not."""
     try:
         with get_db_cursor() as cursor:
@@ -115,17 +121,18 @@ def init_database():
                 birthday TEXT NOT NULL,
                 ethnicity TEXT NOT NULL,
                 province TEXT NOT NULL,
-                card_id TEXT UNIQUE NOT NULL,
+                unified_card_id TEXT UNIQUE NOT NULL,
                 phone TEXT UNIQUE NOT NULL,
 
                 faculty TEXT NOT NULL,
                 major TEXT NOT NULL,
                 year INTEGER,
                 study_schedule TEXT NOT NULL,
-                repeat_years INTEGER NOT NULL DEFAULT 0,
+                years_failed INTEGER NOT NULL DEFAULT 0,
+                admission_type TEXT NOT NULL,
                 admission_session TEXT NOT NULL,
 
-                school_focus TEXT NOT NULL,
+                school_study_domain TEXT NOT NULL,
                 school_grad_session TEXT NOT NULL,
                 school_results DECIMAL(5, 2) NOT NULL,
 
@@ -133,6 +140,7 @@ def init_database():
                 father_phone TEXT NOT NULL,
 
                 is_disabled INTEGER NOT NULL DEFAULT 0,
+                social_care_network INTEGER NOT NULL DEFAULT 0,
                 disability TEXT,
                 disability_cause TEXT
             )
@@ -143,24 +151,13 @@ def init_database():
             CREATE TABLE subjects (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-                    year INTEGER NOT NULL,
                     semester INTEGER NOT NULL,
                     code TEXT UNIQUE NOT NULL,
                     name TEXT NOT NULL,
                     credit_h INTEGER NOT NULL,
-                    structure TEXT NOT NULL
-            )
-        """)
-
-            # Create subject_prerequisites table
-            cursor.execute("""
-            CREATE TABLE subject_prerequisites (
-                subject_id INTEGER NOT NULL,
-                prerequisite_id INTEGER NOT NULL,
-
-                PRIMARY KEY (subject_id, prerequisite_id),
-                FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE CASCADE,
-                FOREIGN KEY (prerequisite_id) REFERENCES subjects (id) ON DELETE CASCADE
+                    structure TEXT NOT NULL,
+                    prerequisite INTEGER,
+                    FOREIGN KEY (prerequisite) REFERENCES subjects (id) ON DELETE SET NULL
             )
         """)
 
@@ -234,11 +231,11 @@ def db_add_student(student):
                 """
                 INSERT INTO students (
                     name, gender, nationality, birthday, ethnicity, province,
-                    card_id, phone, faculty, major, year, study_schedule,
-                    repeat_years, admission_session, school_focus, school_grad_session,
-                    school_results, mother_name, father_phone, is_disabled,
+                    unified_card_id, phone, faculty, major, year, study_schedule,
+                    years_failed, admission_type, admission_session, school_study_domain, school_grad_session,
+                    school_results, mother_name, father_phone, is_disabled, social_care_network,
                     disability, disability_cause
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     student.name,
@@ -247,20 +244,22 @@ def db_add_student(student):
                     student.birthday,
                     student.ethnicity,
                     student.province,
-                    student.card_id,
+                    student.unified_card_id,
                     student.phone,
                     student.faculty,
                     student.major,
                     student.year,
                     student.study_schedule,
-                    student.repeat_years,
+                    student.years_failed,
+                    student.admission_type,
                     student.admission_session,
-                    student.school_focus,
+                    student.school_study_domain,
                     student.school_grad_session,
                     student.school_results,
                     student.mother_name,
                     student.father_phone,
                     student.is_disabled,
+                    student.social_care_network,
                     student.disability,
                     student.disability_cause,
                 ),
@@ -270,81 +269,174 @@ def db_add_student(student):
         return False
 
 
-def add_fake_students():
-    """Add fake students for testing purposes."""
+def db_stub():
+    """Add fake students and subjects for testing purposes."""
     fake_students = [
         Student(
-            name="Alice Johnson",
-            gender="Female",
-            nationality="American",
-            birthday="2000-05-15",
-            ethnicity="Caucasian",
-            province="California",
-            card_id="STU001",
-            phone="555-0101",
+            name="أحمد محمد علي",
+            gender="Male",
+            nationality="Iraqi",
+            birthday="2002-03-15",
+            ethnicity="Arab",
+            province="Baghdad",
+            unified_card_id="STU001",
+            phone="07701234567",
             faculty="Engineering",
-            major="Computer Science",
+            major="Computer Engineering",
             year=2,
             study_schedule="day",
-            repeat_years=0,
-            admission_session="2020",
-            school_focus="Mathematics",
-            school_grad_session="2019",
+            years_failed=0,
+            admission_type="government",
+            admission_session="2024/2025",
+            school_study_domain="Scientific",
+            school_grad_session="2023/2024",
             school_results=85.5,
-            mother_name="Sarah Johnson",
-            father_phone="555-0102",
+            mother_name="فاطمة علي",
+            father_phone="07709876543",
             is_disabled=0,
+            social_care_network=0,
         ),
         Student(
-            name="Bob Smith",
-            gender="Male",
-            nationality="American",
-            birthday="1999-08-22",
-            ethnicity="Hispanic",
-            province="Texas",
-            card_id="STU002",
-            phone="555-0201",
-            faculty="Business",
-            major="Marketing",
+            name="سارة كريم إبراهيم",
+            gender="Female",
+            nationality="Iraqi",
+            birthday="2001-07-22",
+            ethnicity="Arab",
+            province="Basra",
+            unified_card_id="STU002",
+            phone="07711234567",
+            faculty="Medicine",
+            major="General Medicine",
             year=3,
             study_schedule="day",
-            repeat_years=1,
-            admission_session="2019",
-            school_focus="Biology",
-            school_grad_session="2018",
-            school_results=78.0,
-            mother_name="Maria Smith",
-            father_phone="555-0202",
+            years_failed=0,
+            admission_type="government",
+            admission_session="2023/2024",
+            school_study_domain="Scientific",
+            school_grad_session="2022/2023",
+            school_results=92.0,
+            mother_name="ميمونة إبراهيم",
+            father_phone="07719876543",
             is_disabled=0,
+            social_care_network=0,
         ),
         Student(
-            name="Carol Williams",
-            gender="Female",
-            nationality="Canadian",
-            birthday="2001-02-10",
-            ethnicity="Native",
-            province="Ontario",
-            card_id="STU003",
-            phone="555-0301",
-            faculty="Arts",
-            major="English Literature",
+            name="محمد حسن حمزة",
+            gender="Male",
+            nationality="Iraqi",
+            birthday="2003-11-10",
+            ethnicity="Kurdish",
+            province="Erbil",
+            unified_card_id="STU003",
+            phone="07721234567",
+            faculty="Science",
+            major="Physics",
             year=1,
-            study_schedule="night",
-            repeat_years=0,
-            admission_session="2021",
-            school_focus="Literature",
-            school_grad_session="2020",
-            school_results=92.3,
-            mother_name="Jennifer Williams",
-            father_phone="555-0302",
+            study_schedule="evening",
+            years_failed=0,
+            admission_type="government",
+            admission_session="2025/2026",
+            school_study_domain="Scientific",
+            school_grad_session="2024/2025",
+            school_results=78.5,
+            mother_name="رقية حمزة",
+            father_phone="07729876543",
             is_disabled=1,
-            disability="Visual impairment",
-            disability_cause="Congenital",
+            disability="Hearing impairment",
+            disability_cause="Accident",
+            social_care_network=1,
         ),
     ]
 
     for student in fake_students:
         db_add_student(student)
+
+    fake_subjects = [
+        Subject(
+            semester=1,
+            code="CS101",
+            name="Introduction to Programming",
+            credit_h=4,
+            structure="Lecture + Tutorial + Lab",
+        ),
+        Subject(
+            semester=1,
+            code="MATH101",
+            name="Calculus I",
+            credit_h=3,
+            structure="Lecture + Tutorial",
+        ),
+        Subject(
+            semester=1,
+            code="PHYS101",
+            name="Physics I",
+            credit_h=3,
+            structure="Lecture + Tutorial + Lab",
+        ),
+        Subject(
+            semester=1,
+            code="ENG101",
+            name="English I",
+            credit_h=2,
+            structure="Lecture + Tutorial",
+        ),
+        Subject(
+            semester=2,
+            code="CS102",
+            name="Data Structures",
+            credit_h=4,
+            structure="Lecture + Tutorial + Lab",
+        ),
+        Subject(
+            semester=2,
+            code="MATH102",
+            name="Calculus II",
+            credit_h=3,
+            structure="Lecture + Tutorial",
+        ),
+        Subject(
+            semester=2,
+            code="PHYS102",
+            name="Physics II",
+            credit_h=3,
+            structure="Lecture + Tutorial + Lab",
+        ),
+        Subject(
+            semester=2,
+            code="ENG102",
+            name="English II",
+            credit_h=2,
+            structure="Lecture + Tutorial",
+        ),
+    ]
+
+    subject_codes = {}
+    for subject in fake_subjects:
+        if db_add_subject(subject):
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    "SELECT id FROM subjects WHERE code = ?", (subject.code,)
+                )
+                row = cursor.fetchone()
+                if row:
+                    subject_codes[subject.code] = row["id"]
+
+    prerequisite_map = {
+        "CS102": "CS101",
+        "MATH102": "MATH101",
+        "PHYS102": "PHYS101",
+        "ENG102": "ENG101",
+    }
+
+    for subject_code, prereq_code in prerequisite_map.items():
+        subject_id = subject_codes.get(subject_code)
+        prereq_id = subject_codes.get(prereq_code)
+        if subject_id and prereq_id:
+            with get_db_cursor() as cursor:
+                cursor.execute(
+                    "UPDATE subjects SET prerequisite = ? WHERE id = ?",
+                    (prereq_id, subject_id),
+                )
 
 
 def db_del_student(student_id):
@@ -358,34 +450,50 @@ def db_del_student(student_id):
 
 
 def db_edit_student(student):
-    """Edits a student from the database. Returns True if successful, False if not."""
-    try:
-        # This function needs implementation for actual editing logic
-        # For now, return False to indicate not implemented
-        return False
-    except Exception:
-        return False
-
-
-# SUBJECT FUNCTIONS
-def db_get_all_subjects(year=None, semester=None):
-    """Retrieve all subjects from the database. Returns list of subjects or empty list if error."""
+    """Edits a student in the database. Returns True if successful, False if not."""
     try:
         with get_db_cursor() as cursor:
-            if year and semester:
-                cursor.execute(
-                    "SELECT * FROM subjects WHERE year = ? AND semester = ?",
-                    (year, semester),
-                )
-            elif year:
-                cursor.execute("SELECT * FROM subjects WHERE year = ?", (year,))
-            elif semester:
-                cursor.execute("SELECT * FROM subjects WHERE semester = ?", (semester,))
-            else:
-                cursor.execute("SELECT * FROM subjects")
-            return cursor.fetchall()
+            cursor.execute(
+                """
+                UPDATE students SET
+                    name = ?, gender = ?, nationality = ?, birthday = ?, ethnicity = ?, province = ?,
+                    unified_card_id = ?, phone = ?, faculty = ?, major = ?, year = ?, study_schedule = ?,
+                    years_failed = ?, admission_type = ?, admission_session = ?, school_study_domain = ?, school_grad_session = ?,
+                    school_results = ?, mother_name = ?, father_phone = ?, is_disabled = ?, social_care_network = ?,
+                    disability = ?, disability_cause = ?
+                WHERE id = ?
+                """,
+                (
+                    student.name,
+                    student.gender,
+                    student.nationality,
+                    student.birthday,
+                    student.ethnicity,
+                    student.province,
+                    student.unified_card_id,
+                    student.phone,
+                    student.faculty,
+                    student.major,
+                    student.year,
+                    student.study_schedule,
+                    student.years_failed,
+                    student.admission_type,
+                    student.admission_session,
+                    student.school_study_domain,
+                    student.school_grad_session,
+                    student.school_results,
+                    student.mother_name,
+                    student.father_phone,
+                    student.is_disabled,
+                    student.social_care_network,
+                    student.disability,
+                    student.disability_cause,
+                    student.id,
+                ),
+            )
+        return True
     except Exception:
-        return []
+        return False
 
 
 def db_add_subject(subject):
@@ -394,68 +502,73 @@ def db_add_subject(subject):
         with get_db_cursor() as cursor:
             cursor.execute(
                 """
-                INSERT INTO subjects (year, semester, code, name, credit_h, structure)
+                INSERT INTO subjects (semester, code, name, credit_h, structure, prerequisite)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """,
+                """,
                 (
-                    subject.year,
                     subject.semester,
                     subject.code,
                     subject.name,
                     subject.credit_h,
                     subject.structure,
+                    subject.prerequisite,
                 ),
             )
-            return True
+        return True
+    except Exception:
+        return False
+
+
+def db_get_all_subjects():
+    """Retrieve all subjects from the database sorted by semester. Returns list of subjects or empty list if error."""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT * FROM subjects ORDER BY semester ASC, code ASC")
+            return cursor.fetchall()
+    except Exception:
+        return []
+
+
+def db_get_subject_by_id(subject_id):
+    """Retrieve a single subject by ID. Returns subject dict or None if not found."""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute("SELECT * FROM subjects WHERE id = ?", (subject_id,))
+            return cursor.fetchone()
+    except Exception:
+        return None
+
+
+def db_edit_subject(subject):
+    """Updates a subject in the database. Returns True if successful, False if not."""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE subjects 
+                SET semester = ?, code = ?, name = ?, credit_h = ?, structure = ?, prerequisite = ?
+                WHERE id = ?
+                """,
+                (
+                    subject.semester,
+                    subject.code,
+                    subject.name,
+                    subject.credit_h,
+                    subject.structure,
+                    subject.prerequisite,
+                    subject.id,
+                ),
+            )
+        return True
     except Exception:
         return False
 
 
 def db_del_subject(subject_id):
-    """Deletes a subject by subject id from the database. Returns True if successful, False if not."""
+    """Deletes a subject from the database. Returns True if successful, False if not."""
     try:
         with get_db_cursor() as cursor:
             cursor.execute("DELETE FROM subjects WHERE id = ?", (subject_id,))
-            return cursor.rowcount > 0
-    except Exception:
-        return False
-
-
-def db_edit_subject(subject):
-    """Edits a subject to the database. Returns True if successful, False if not."""
-    try:
-        # This function needs implementation for actual editing logic
-        # For now, return False to indicate not implemented
-        return False
-    except Exception:
-        return False
-
-
-# CROSS FUNCTIONS
-def db_enroll_student(student_id, subject_id):
-    """Enrolls a student to a subject. Returns True if successful, False if not."""
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(
-                "INSERT OR IGNORE INTO enrollments (student_id, subject_id) VALUES (?, ?)",
-                (student_id, subject_id),
-            )
-            return cursor.rowcount > 0
-    except Exception:
-        return False
-
-
-def db_grade_student(student_id, subject_id, cw_result, f_result):
-    """Grades a student in a specific subject. Returns True if successful, False if not."""
-    try:
-        with get_db_cursor() as cursor:
-            cursor.execute(
-                """
-                INSERT OR REPLACE INTO grades (student_id, subject_id, coursework, final)
-                VALUES (?, ?, ?, ?)
-            """,
-                (student_id, subject_id, cw_result, f_result),
-            )
-            return True
+        return True
     except Exception:
         return False

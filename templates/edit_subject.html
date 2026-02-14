@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Subject{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        {% if subject %}
+        <!-- Header with Buttons -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Edit Subject</h1>
+            <div class="d-flex gap-2">
+                <button type="submit" form="editForm" class="btn btn-primary">Save Changes</button>
+                <a href="{{ url_for('view_subject', subject_id=subject.id) }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+        
+        <!-- Alert Display -->
+        {% if alert_type and alert_message %}
+        <div class="alert alert-{{ alert_type }} alert-dismissible fade show" role="alert">
+            {{ alert_message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+        
+        <!-- Edit Subject Form -->
+        <form method="POST" id="editForm" class="needs-validation" novalidate>
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Subject Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="semester" class="form-label">Semester</label>
+                            <input type="number" class="form-control" id="semester" name="semester" 
+                                   value="{{ subject.semester }}" min="1" max="20" required>
+                            <div class="invalid-feedback">
+                                Please provide a valid semester (1-20).
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="code" class="form-label">Subject Code</label>
+                            <input type="text" class="form-control" id="code" name="code" 
+                                   value="{{ subject.code }}" pattern="[A-Za-z0-9\-]+" required>
+                            <div class="invalid-feedback">
+                                Please provide a valid subject code.
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="credit_h" class="form-label">Credit Hours</label>
+                            <input type="number" class="form-control" id="credit_h" name="credit_h" 
+                                   value="{{ subject.credit_h }}" min="1" max="10" required>
+                            <div class="invalid-feedback">
+                                Please provide valid credit hours (1-10).
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Subject Name</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ subject.name }}" required>
+                            <div class="invalid-feedback">
+                                Please provide a subject name.
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="structure" class="form-label">Structure</label>
+                            <select class="form-select" id="structure" name="structure" required>
+                                <option value="{{ subject.structure }}">{{ subject.structure }}</option>
+                                <option value="Lecture + Tutorial">Lecture + Tutorial</option>
+                                <option value="Lecture + Tutorial + Lab">Lecture + Tutorial + Lab</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a structure.
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="prerequisite" class="form-label">Prerequisite</label>
+                            <select class="form-select" id="prerequisite" name="prerequisite">
+                                <option value="">None</option>
+                                {% for s in all_subjects %}
+                                {% if s.id != subject.id %}
+                                <option value="{{ s.id }}" {% if subject.prerequisite == s.id %}selected{% endif %}>{{ s.code }} - {{ s.name }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {% else %}
+        <!-- Subject Not Found -->
+        <div class="alert alert-danger">
+            <h3>Subject Not Found</h3>
+            <p>The subject with ID {{ subject_id if subject_id else 'unknown' }} could not be found.</p>
+            <a href="{{ url_for('subjects') }}" class="btn btn-primary">Back to Subjects</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+(function() {
+    'use strict';
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+</script>
+
+{% endblock %}

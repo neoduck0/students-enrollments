@@ -6,183 +6,195 @@
 <div class="row">
     <div class="col-12">
         {% if student %}
-        <!-- Student Header -->
+        <!-- Alert Display -->
+        {% if alert_type and alert_message %}
+        <div class="alert alert-{{ alert_type }} alert-dismissible fade show" role="alert">
+            {{ alert_message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <!-- Header with Edit Button -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>{{ student.name }}</h1>
-            <div>
+            <h1>Student Details</h1>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('edit_student', student_id=student.id) }}" class="btn btn-primary">Edit</a>
+                <form method="POST" action="{{ url_for('delete_student', student_id=student.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this student?')">Delete</button>
+                </form>
                 <a href="{{ url_for('students') }}" class="btn btn-secondary">← Back to Students</a>
             </div>
         </div>
-
-        <!-- Student Information Cards -->
-        <div class="row">
-            <!-- Personal Information -->
-            <div class="col-md-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Personal Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-borderless">
-                            <tr>
-                                <td><strong>Student ID:</strong></td>
-                                <td>{{ student.id }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Name:</strong></td>
-                                <td>{{ student.name }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Gender:</strong></td>
-                                <td>{{ student.gender }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Nationality:</strong></td>
-                                <td>{{ student.nationality }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Birthday:</strong></td>
-                                <td>{{ student.birthday }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Ethnicity:</strong></td>
-                                <td>{{ student.ethnicity }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Province:</strong></td>
-                                <td>{{ student.province }}</td>
-                            </tr>
-                        </table>
-                    </div>
+        
+        <!-- Student Information Form (Disabled) -->
+        <form>
+            <!-- Personal Information Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Personal Information</h5>
                 </div>
-            </div>
-
-            <!-- Contact Information -->
-            <div class="col-md-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">Contact Information</h5>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ student.name }}" disabled>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label">Gender</label>
+                            <select class="form-select" id="gender" name="gender" disabled>
+                                <option value="">{{ student.gender }}</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <table class="table table-borderless">
-                            <tr>
-                                <td><strong>Card ID:</strong></td>
-                                <td>{{ student.card_id }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Phone:</strong></td>
-                                <td>{{ student.phone }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Mother's Name:</strong></td>
-                                <td>{{ student.mother_name }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Father's Phone:</strong></td>
-                                <td>{{ student.father_phone }}</td>
-                            </tr>
-                        </table>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nationality" class="form-label">Nationality</label>
+                            <input type="text" class="form-control" id="nationality" name="nationality" value="{{ student.nationality }}" disabled>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="birthday" class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="birthday" name="birthday" value="{{ student.birthday }}" disabled>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Academic Information -->
-        <div class="row">
-            <div class="col-md-8 mb-4">
-                <div class="card h-100">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">Academic Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ethnicity" class="form-label">Ethnicity</label>
+                            <input type="text" class="form-control" id="ethnicity" name="ethnicity" value="{{ student.ethnicity }}" disabled>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="province" class="form-label">Province/State</label>
+                            <input type="text" class="form-control" id="province" name="province" value="{{ student.province }}" disabled>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <table class="table table-borderless">
-                            <tr>
-                                <td><strong>Faculty:</strong></td>
-                                <td>{{ student.faculty }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Major:</strong></td>
-                                <td>{{ student.major }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Current Year:</strong></td>
-                                <td>{{ student.year if student.year else 'N/A' }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Study Schedule:</strong></td>
-                                <td>{{ student.study_schedule.capitalize() }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Repeat Years:</strong></td>
-                                <td>{{ student.repeat_years }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Admission Session:</strong></td>
-                                <td>{{ student.admission_session }}</td>
-                            </tr>
-                        </table>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="unified_card_id" class="form-label">Unified Card ID</label>
+                            <input type="text" class="form-control" id="unified_card_id" name="unified_card_id" value="{{ student.unified_card_id }}" disabled>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Phone Number</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="{{ student.phone }}" disabled>
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- School Background -->
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">School Background</h5>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-borderless">
-                            <tr>
-                                <td><strong>Focus:</strong></td>
-                                <td>{{ student.school_focus }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Grad Session:</strong></td>
-                                <td>{{ student.school_grad_session }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>Results:</strong></td>
-                                <td>{{ student.school_results }}%</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Disability Information (if applicable) -->
-        {% if student.is_disabled == 1 %}
-        <div class="row">
-            <div class="col-12 mb-4">
-                <div class="card">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0">Disability Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Disability:</strong> {{ student.disability }}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <p><strong>Cause:</strong> {{ student.disability_cause }}</p>
-                            </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="mother_name" class="form-label">Mother's Name</label>
+                            <input type="text" class="form-control" id="mother_name" name="mother_name" value="{{ student.mother_name }}" disabled>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="father_phone" class="form-label">Father's Phone</label>
+                            <input type="tel" class="form-control" id="father_phone" name="father_phone" value="{{ student.father_phone }}" disabled>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        {% endif %}
 
-        <!-- Action Buttons -->
-        <div class="row">
-            <div class="col-12">
-                <div class="d-flex gap-2">
-                    <a href="{{ url_for('students') }}" class="btn btn-secondary">← Back to List</a>
-                    <!-- Future: Edit and Delete buttons can be added here -->
+            <!-- Faculty Information Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Faculty Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="faculty" class="form-label">Faculty</label>
+                            <input type="text" class="form-control" id="faculty" name="faculty" value="{{ student.faculty }}" disabled>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="major" class="form-label">Major</label>
+                            <input type="text" class="form-control" id="major" name="major" value="{{ student.major }}" disabled>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="year" class="form-label">Year</label>
+                            <input type="number" class="form-control" id="year" name="year" value="{{ student.year if student.year else '' }}" disabled>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="study_schedule" class="form-label">Study Schedule</label>
+                            <select class="form-select" id="study_schedule" name="study_schedule" disabled>
+                                <option value="">{{ student.study_schedule.capitalize() if student.study_schedule }}</option>
+                                <option value="day">Day</option>
+                                <option value="evening">Evening</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="admission_type" class="form-label">Admission Type</label>
+                            <input type="text" class="form-control" id="admission_type" name="admission_type" value="{{ student.admission_type }}" disabled>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="admission_session" class="form-label">Admission Session</label>
+                            <input type="text" class="form-control" id="admission_session" name="admission_session" value="{{ student.admission_session }}" disabled>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <!-- School Information Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">School Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="school_study_domain" class="form-label">School Study Domain</label>
+                            <input type="text" class="form-control" id="school_study_domain" name="school_study_domain" value="{{ student.school_study_domain }}" disabled>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="school_grad_session" class="form-label">School Graduation Session</label>
+                            <input type="text" class="form-control" id="school_grad_session" name="school_grad_session" value="{{ student.school_grad_session }}" disabled>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="school_results" class="form-label">School Results (%)</label>
+                            <input type="number" class="form-control" id="school_results" name="school_results" value="{{ student.school_results }}" disabled>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="years_failed" class="form-label">Years Failed</label>
+                            <input type="number" class="form-control" id="years_failed" name="years_failed" value="{{ student.years_failed if student.years_failed else 0 }}" disabled>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health Information Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Health Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="social_care_network" class="form-label">Social Care Network?</label>
+                            <select class="form-select" id="social_care_network" name="social_care_network" disabled>
+                                <option value="1" {% if student.social_care_network == 1 %}selected{% endif %}>Yes</option>
+                                <option value="0" {% if student.social_care_network == 0 %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="is_disabled" class="form-label">Disabled?</label>
+                            <select class="form-select" id="is_disabled" name="is_disabled" disabled>
+                                <option value="1" {% if student.is_disabled == 1 %}selected{% endif %}>Yes</option>
+                                <option value="0" {% if student.is_disabled == 0 %}selected{% endif %}>No</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="disability" class="form-label">Disability Type</label>
+                            <input type="text" class="form-control" id="disability" name="disability" value="{{ student.disability if student.disability else '' }}" disabled>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="disability_cause" class="form-label">Disability Cause</label>
+                            <input type="text" class="form-control" id="disability_cause" name="disability_cause" value="{{ student.disability_cause if student.disability_cause else '' }}" disabled>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
 
         {% else %}
         <!-- Student Not Found -->

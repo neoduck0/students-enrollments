@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subject.name if subject else 'Subject Not Found' }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        {% if subject %}
+        <!-- Header with Buttons -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Subject Details</h1>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('edit_subject', subject_id=subject.id) }}" class="btn btn-primary">Edit</a>
+                <form method="POST" action="{{ url_for('delete_subject', subject_id=subject.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this subject?')">Delete</button>
+                </form>
+                <a href="{{ url_for('subjects') }}" class="btn btn-secondary">← Back to Subjects</a>
+            </div>
+        </div>
+        
+        <!-- Subject Information Form (Disabled) -->
+        <form>
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Subject Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="semester" class="form-label">Semester</label>
+                            <input type="number" class="form-control" id="semester" name="semester" value="{{ subject.semester }}" disabled>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="code" class="form-label">Subject Code</label>
+                            <input type="text" class="form-control" id="code" name="code" value="{{ subject.code }}" disabled>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="credit_h" class="form-label">Credit Hours</label>
+                            <input type="number" class="form-control" id="credit_h" name="credit_h" value="{{ subject.credit_h }}" disabled>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Subject Name</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ subject.name }}" disabled>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="structure" class="form-label">Structure</label>
+                            <select class="form-select" id="structure" name="structure" disabled>
+                                <option value="{{ subject.structure }}">{{ subject.structure }}</option>
+                                <option value="Lecture + Tutorial">Lecture + Tutorial</option>
+                                <option value="Lecture + Tutorial + Lab">Lecture + Tutorial + Lab</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="prerequisite" class="form-label">Prerequisite</label>
+                            <input type="text" class="form-control" id="prerequisite" name="prerequisite" value="{{ prerequisite_name if prerequisite_name else 'None' }}" disabled>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {% else %}
+        <!-- Subject Not Found -->
+        <div class="alert alert-danger">
+            <h3>Subject Not Found</h3>
+            <p>The subject with ID {{ subject_id if subject_id else 'unknown' }} could not be found.</p>
+            <a href="{{ url_for('subjects') }}" class="btn btn-primary">Back to Subjects</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
