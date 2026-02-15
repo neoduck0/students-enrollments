@@ -11,8 +11,15 @@ from database import (
     db_get_subject_by_id,
     db_edit_subject,
     db_del_subject,
+    db_get_grades_by_student_id,
+    db_add_grade,
+    db_update_grade,
+    db_del_grade,
+    db_check_prerequisite,
+    db_check_is_prerequisite_for_later_semester,
     Student,
     Subject,
+    Grade,
     db_stub,
 )
 
@@ -20,7 +27,7 @@ app = Flask(__name__)
 
 # Initialize database on startup
 db_init()
-db_stub()
+# db_stub()
 
 
 @app.route("/")
@@ -110,7 +117,7 @@ def add_subject():
         prerequisite = request.form.get("prerequisite")
         if prerequisite == "":
             prerequisite = None
-        
+
         subject = Subject(
             semester=request.form["semester"],
             code=request.form["code"],
@@ -119,9 +126,9 @@ def add_subject():
             structure=request.form["structure"],
             prerequisite=prerequisite,
         )
-        
+
         success = db_add_subject(subject)
-        
+
         if success:
             return render_template(
                 "add_subject.html",
@@ -136,7 +143,7 @@ def add_subject():
                 alert_message="Failed to add subject. The subject code may already exist.",
                 subjects=db_get_all_subjects(),
             )
-    
+
     return render_template("add_subject.html", subjects=db_get_all_subjects())
 
 
@@ -197,7 +204,9 @@ def edit_subject(subject_id):
                 alert_message="Failed to update subject. The subject code may already exist.",
             )
 
-    return render_template("edit_subject.html", subject=subject_data, all_subjects=all_subjects)
+    return render_template(
+        "edit_subject.html", subject=subject_data, all_subjects=all_subjects
+    )
 
 
 @app.route("/delete_subject/<int:subject_id>", methods=["POST"])
@@ -309,6 +318,156 @@ def edit_student(student_id):
             )
 
     return render_template("edit_student.html", student=student_data)
+
+
+@app.route("/grades/<int:student_id>")
+def grades(student_id):
+    student_data = db_get_student_by_id(student_id)
+    if not student_data:
+        return redirect(url_for("students"))
+
+    grades = db_get_grades_by_student_id(student_id)
+    grades_with_subjects = []
+    for grade in grades:
+        subject = db_get_subject_by_id(grade.subject_id)
+        grades_with_subjects.append({"grade": grade, "subject": subject})
+
+    alert_type = request.args.get("alert_type")
+    alert_message = request.args.get("alert_message")
+
+    return render_template(
+        "grades.html",
+        student=student_data,
+        grades_with_subjects=grades_with_subjects,
+        alert_type=alert_type,
+        alert_message=alert_message,
+    )
+
+
+@app.route("/update_grade/<int:student_id>/<int:subject_id>", methods=["POST"])
+def update_grade(student_id, subject_id):
+    semester = int(request.form.get("semester", 1))
+    coursework = float(request.form.get("coursework", 0))
+    final = float(request.form.get("final", 0))
+    attended_final = 1 if request.form.get("attended_final") else 0
+    is_finalized = 1 if request.form.get("is_finalized") else 0
+
+    db_update_grade(
+        student_id,
+        subject_id,
+        semester,
+        coursework,
+        final,
+        attended_final,
+        is_finalized,
+    )
+
+    return redirect(url_for("grades", student_id=student_id))
+
+
+@app.route("/add_grade/<int:student_id>", methods=["GET", "POST"])
+def add_grade(student_id):
+    student_data = db_get_student_by_id(student_id)
+    if not student_data:
+        return redirect(url_for("students"))
+
+    subjects = db_get_all_subjects()
+
+    if request.method == "POST":
+        subject_id = int(request.form.get("subject_id"))
+        semester = int(request.form.get("semester"))
+        coursework = float(request.form.get("coursework", 0))
+        final = float(request.form.get("final", 0))
+        attended_final = 1 if request.form.get("attended_final") else 0
+        is_finalized = 1 if request.form.get("is_finalized") else 0
+
+        if not db_check_prerequisite(student_id, subject_id, semester):
+            prereq_subject = db_get_subject_by_id(subject_id)
+            prereq = (
+                db_get_subject_by_id(prereq_subject["prerequisite"])
+                if prereq_subject and prereq_subject["prerequisite"]
+                else None
+            )
+            prereq_name = (
+                f"{prereq['code']} - {prereq['name']}" if prereq else "Prerequisite"
+            )
+            return render_template(
+                "add_grade.html",
+                student=student_data,
+                subjects=subjects,
+                alert_type="danger",
+                alert_message=f"Cannot add grades. Student must pass {prereq_name} in a previous semester first.",
+            )
+
+        success = db_add_grade(
+            student_id,
+            subject_id,
+            semester,
+            coursework,
+            final,
+            attended_final,
+            is_finalized,
+        )
+        if success:
+            return redirect(
+                url_for(
+                    "grades",
+                    student_id=student_id,
+                    alert_type="success",
+                    alert_message="Grade added successfully!",
+                )
+            )
+        else:
+            return render_template(
+                "add_grade.html",
+                student=student_data,
+                subjects=subjects,
+                alert_type="danger",
+                alert_message="Failed to add grade. This entry may already exist.",
+            )
+
+    return render_template("add_grade.html", student=student_data, subjects=subjects)
+
+
+@app.route(
+    "/delete_grade/<int:student_id>/<int:subject_id>/<int:semester>", methods=["POST"]
+)
+def delete_grade(student_id, subject_id, semester):
+    if not db_check_is_prerequisite_for_later_semester(
+        student_id, subject_id, semester
+    ):
+        subject = db_get_subject_by_id(subject_id)
+        subject_name = (
+            f"{subject['code']} - {subject['name']}" if subject else "This subject"
+        )
+        return redirect(
+            url_for(
+                "grades",
+                student_id=student_id,
+                alert_type="danger",
+                alert_message=f"Cannot delete grade. {subject_name} is a prerequisite for subjects in later semesters.",
+            )
+        )
+
+    success = db_del_grade(student_id, subject_id, semester)
+    if success:
+        return redirect(
+            url_for(
+                "grades",
+                student_id=student_id,
+                alert_type="success",
+                alert_message="Grade deleted successfully!",
+            )
+        )
+    else:
+        return redirect(
+            url_for(
+                "grades",
+                student_id=student_id,
+                alert_type="danger",
+                alert_message="Failed to delete grade.",
+            )
+        )
 
 
 @app.route("/subject/<int:subject_id>")

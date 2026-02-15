@@ -68,6 +68,11 @@ class Student:
         self.social_care_network = social_care_network
         self.disability = disability
         self.disability_cause = disability_cause
+        self.grades = []
+
+    def load_grades(self):
+        if self.id is not None:
+            self.grades = db_get_grades_by_student_id(self.id)
 
 
 class Subject:
@@ -81,6 +86,39 @@ class Subject:
         self.credit_h = credit_h
         self.structure = structure
         self.prerequisite = prerequisite
+
+
+class Grade:
+    def __init__(
+        self,
+        student_id,
+        subject_id,
+        semester,
+        coursework=0.0,
+        final=0.0,
+        attended_final=0,
+        is_finalized=0,
+        last_updated=None,
+    ):
+        self.student_id = student_id
+        self.subject_id = subject_id
+        self.semester = semester
+        self.coursework = coursework
+        self.final = final
+        self.attended_final = attended_final
+        self.is_finalized = is_finalized
+        self.last_updated = last_updated
+
+    def is_failed(self):
+        if not self.is_finalized:
+            return "no"
+        if self.coursework < 13:
+            return "coursework"
+        if not self.attended_final:
+            return "final_attendance"
+        if self.final + self.coursework < 50:
+            return "final"
+        return "no"
 
 
 # GENERAL
@@ -161,27 +199,19 @@ def db_init():
             )
         """)
 
-            # Create enrollments table
-            cursor.execute("""
-            CREATE TABLE enrollments (
-                student_id INTEGER NOT NULL,
-                subject_id INTEGER NOT NULL,
-
-                PRIMARY KEY (student_id, subject_id),
-                FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
-                FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE CASCADE
-            )
-        """)
-
             # Create grades table
             cursor.execute("""
             CREATE TABLE grades (
                 student_id INTEGER NOT NULL,
                 subject_id INTEGER NOT NULL,
+                semester INTEGER NOT NULL,
                 coursework REAL NOT NULL DEFAULT 0.0,
                 final REAL NOT NULL DEFAULT 0.0,
+                attended_final BOOLEAN NOT NULL DEFAULT 0,
+                is_finalized BOOLEAN NOT NULL DEFAULT 0,
+                last_updated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-                PRIMARY KEY (student_id, subject_id),
+                PRIMARY KEY (student_id, subject_id, semester),
                 FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE,
                 FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE CASCADE
             )
@@ -190,6 +220,37 @@ def db_init():
         return True
     except Exception:
         return False
+
+
+def db_get_grades_by_student_id(student_id):
+    """Retrieve all grades for a student from the database. Returns list of Grade objects or empty list if error."""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT grades.* FROM grades
+                JOIN subjects ON grades.subject_id = subjects.id
+                WHERE grades.student_id = ?
+                ORDER BY grades.semester DESC, subjects.code ASC
+                """,
+                (student_id,),
+            )
+            rows = cursor.fetchall()
+            return [
+                Grade(
+                    student_id=row["student_id"],
+                    subject_id=row["subject_id"],
+                    semester=row["semester"],
+                    coursework=row["coursework"],
+                    final=row["final"],
+                    attended_final=row["attended_final"],
+                    is_finalized=row["is_finalized"],
+                    last_updated=row["last_updated"],
+                )
+                for row in rows
+            ]
+    except Exception:
+        return []
 
 
 # STUDENTS FUNCTIONS
@@ -267,6 +328,95 @@ def db_add_student(student):
         return True
     except Exception:
         return False
+
+
+def db_add_grade(
+    student_id,
+    subject_id,
+    semester,
+    coursework,
+    final,
+    attended_final=0,
+    is_finalized=0,
+):
+    """Adds a grade record to the database. Returns True if successful, False if not."""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO grades (student_id, subject_id, semester, coursework, final, attended_final, is_finalized)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    student_id,
+                    subject_id,
+                    semester,
+                    coursework,
+                    final,
+                    attended_final,
+                    is_finalized,
+                ),
+            )
+        return True
+    except Exception:
+        return False
+
+
+def db_update_grade(
+    student_id, subject_id, semester, coursework, final, attended_final, is_finalized
+):
+    """Updates a grade record in the database. Returns True if successful, False if not."""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE grades SET semester = ?, coursework = ?, final = ?, attended_final = ?, is_finalized = ?, last_updated = CURRENT_TIMESTAMP
+                WHERE student_id = ? AND subject_id = ?
+                """,
+                (
+                    semester,
+                    coursework,
+                    final,
+                    attended_final,
+                    is_finalized,
+                    student_id,
+                    subject_id,
+                ),
+            )
+        return True
+    except Exception:
+        return False
+
+
+def db_check_prerequisite(student_id, subject_id, semester):
+    """Check if the student has passed the prerequisite in a previous semester. Returns True if satisfied, False otherwise."""
+    subject = db_get_subject_by_id(subject_id)
+    if not subject or not subject["prerequisite"]:
+        return True
+
+    with get_db_cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT grades.* FROM grades
+            JOIN subjects ON grades.subject_id = subjects.id
+            WHERE grades.student_id = ? AND grades.subject_id = ? AND grades.semester < ?
+            """,
+            (student_id, subject["prerequisite"], semester),
+        )
+        rows = cursor.fetchall()
+        if not rows:
+            return False
+        prereq_grade = Grade(
+            student_id=rows[0]["student_id"],
+            subject_id=rows[0]["subject_id"],
+            semester=rows[0]["semester"],
+            coursework=rows[0]["coursework"],
+            final=rows[0]["final"],
+            attended_final=rows[0]["attended_final"],
+            is_finalized=rows[0]["is_finalized"],
+            last_updated=rows[0]["last_updated"],
+        )
+        return prereq_grade.is_failed() == "no"
 
 
 def db_stub():
@@ -438,6 +588,178 @@ def db_stub():
                     (prereq_id, subject_id),
                 )
 
+    student_ids = {}
+    for student in fake_students:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "SELECT id FROM students WHERE unified_card_id = ?",
+                (student.unified_card_id,),
+            )
+            row = cursor.fetchone()
+            if row:
+                student_ids[student.unified_card_id] = row["id"]
+
+    fake_grades = [
+        {
+            "student": "STU001",
+            "subject": "CS101",
+            "semester": 1,
+            "coursework": 25.5,
+            "final": 58.0,
+            "attended_final": 1,
+            "is_finalized": 1,
+        },
+        {
+            "student": "STU001",
+            "subject": "MATH101",
+            "semester": 1,
+            "coursework": 22.0,
+            "final": 45.0,
+            "attended_final": 1,
+            "is_finalized": 1,
+        },
+        {
+            "student": "STU001",
+            "subject": "PHYS101",
+            "semester": 1,
+            "coursework": 20.0,
+            "final": 52.0,
+            "attended_final": 1,
+            "is_finalized": 1,
+        },
+        {
+            "student": "STU001",
+            "subject": "ENG101",
+            "semester": 1,
+            "coursework": 18.0,
+            "final": 0.0,
+            "attended_final": 0,
+            "is_finalized": 0,
+        },
+        {
+            "student": "STU001",
+            "subject": "CS102",
+            "semester": 2,
+            "coursework": 15.0,
+            "final": 0.0,
+            "attended_final": 0,
+            "is_finalized": 0,
+        },
+        {
+            "student": "STU001",
+            "subject": "MATH102",
+            "semester": 2,
+            "coursework": 12.0,
+            "final": 0.0,
+            "attended_final": 0,
+            "is_finalized": 0,
+        },
+        {
+            "student": "STU002",
+            "subject": "CS101",
+            "semester": 1,
+            "coursework": 28.0,
+            "final": 65.0,
+            "attended_final": 1,
+            "is_finalized": 1,
+        },
+        {
+            "student": "STU002",
+            "subject": "MATH101",
+            "semester": 1,
+            "coursework": 26.0,
+            "final": 60.0,
+            "attended_final": 1,
+            "is_finalized": 1,
+        },
+        {
+            "student": "STU002",
+            "subject": "PHYS101",
+            "semester": 1,
+            "coursework": 24.0,
+            "final": 55.0,
+            "attended_final": 1,
+            "is_finalized": 1,
+        },
+        {
+            "student": "STU002",
+            "subject": "ENG101",
+            "semester": 1,
+            "coursework": 30.0,
+            "final": 70.0,
+            "attended_final": 1,
+            "is_finalized": 1,
+        },
+        {
+            "student": "STU002",
+            "subject": "CS102",
+            "semester": 2,
+            "coursework": 27.0,
+            "final": 62.0,
+            "attended_final": 1,
+            "is_finalized": 1,
+        },
+        {
+            "student": "STU002",
+            "subject": "MATH102",
+            "semester": 2,
+            "coursework": 25.0,
+            "final": 58.0,
+            "attended_final": 1,
+            "is_finalized": 1,
+        },
+        {
+            "student": "STU003",
+            "subject": "CS101",
+            "semester": 1,
+            "coursework": 10.0,
+            "final": 0.0,
+            "attended_final": 0,
+            "is_finalized": 0,
+        },
+        {
+            "student": "STU003",
+            "subject": "MATH101",
+            "semester": 1,
+            "coursework": 8.0,
+            "final": 0.0,
+            "attended_final": 0,
+            "is_finalized": 0,
+        },
+        {
+            "student": "STU003",
+            "subject": "PHYS101",
+            "semester": 1,
+            "coursework": 12.0,
+            "final": 0.0,
+            "attended_final": 0,
+            "is_finalized": 0,
+        },
+        {
+            "student": "STU003",
+            "subject": "ENG101",
+            "semester": 1,
+            "coursework": 15.0,
+            "final": 0.0,
+            "attended_final": 0,
+            "is_finalized": 0,
+        },
+    ]
+
+    for grade in fake_grades:
+        student_id = student_ids.get(grade["student"])
+        subject_id = subject_codes.get(grade["subject"])
+        if student_id and subject_id:
+            db_add_grade(
+                student_id,
+                subject_id,
+                grade["semester"],
+                grade["coursework"],
+                grade["final"],
+                grade["attended_final"],
+                grade["is_finalized"],
+            )
+
 
 def db_del_student(student_id):
     """Deletes a student by student id from the database. Returns True if successful, False if not."""
@@ -569,6 +891,43 @@ def db_del_subject(subject_id):
     try:
         with get_db_cursor() as cursor:
             cursor.execute("DELETE FROM subjects WHERE id = ?", (subject_id,))
+        return True
+    except Exception:
+        return False
+
+
+def db_check_is_prerequisite_for_later_semester(student_id, subject_id, semester):
+    """Check if this subject is a prerequisite for any subject the student has in a later semester."""
+    with get_db_cursor() as cursor:
+        cursor.execute(
+            "SELECT * FROM subjects WHERE prerequisite = ?",
+            (subject_id,),
+        )
+        dependent_subjects = cursor.fetchall()
+
+        if not dependent_subjects:
+            return True
+
+        dependent_ids = [s["id"] for s in dependent_subjects]
+
+        placeholders = ",".join("?" * len(dependent_ids))
+        cursor.execute(
+            f"SELECT * FROM grades WHERE student_id = ? AND subject_id IN ({placeholders}) AND semester > ?",
+            (student_id, *dependent_ids, semester),
+        )
+        later_grades = cursor.fetchall()
+
+        return len(later_grades) == 0
+
+
+def db_del_grade(student_id, subject_id, semester):
+    """Deletes a grade record from the database. Returns True if successful, False if not."""
+    try:
+        with get_db_cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM grades WHERE student_id = ? AND subject_id = ? AND semester = ?",
+                (student_id, subject_id, semester),
+            )
         return True
     except Exception:
         return False

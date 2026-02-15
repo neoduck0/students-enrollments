@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Grade - {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Grades - {{ student.name }}</h1>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('add_grade', student_id=student.id) }}" class="btn btn-success">Add Grade</a>
+                <a href="{{ url_for('student', student_id=student.id) }}" class="btn btn-secondary">Back to Student</a>
+            </div>
+        </div>
+
+        {% if alert_type and alert_message %}
+        <div class="alert alert-{{ alert_type }} alert-dismissible fade show" role="alert">
+            {{ alert_message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <strong>Student ID:</strong> {{ student.unified_card_id }}
+            </div>
+            <div class="col-md-3">
+                <strong>Faculty:</strong> {{ student.faculty }}
+            </div>
+            <div class="col-md-3">
+                <strong>Major:</strong> {{ student.major }}
+            </div>
+            <div class="col-md-3">
+                <strong>Year:</strong> {{ student.year }}
+            </div>
+        </div>
+
+        {% for item in grades_with_subjects %}
+        {% set grade = item.grade %}
+        {% set subject = item.subject %}
+        
+        {% set card_class = "border" %}
+        {% if grade.is_finalized %}
+            {% set failure_type = grade.is_failed() %}
+            {% if failure_type == "no" %}
+                {% set card_class = "border-success bg-success-subtle" %}
+            {% else %}
+                {% set card_class = "border-danger bg-danger-subtle" %}
+            {% endif %}
+        {% endif %}
+        
+        <div class="card mb-3 {{ card_class }}">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ subject.code }} - {{ subject.name }}</h5>
+                <small class="text-muted">Last Updated: {{ grade.last_updated }}</small>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-10">
+                        <form method="POST" action="{{ url_for('update_grade', student_id=student.id, subject_id=subject.id) }}" class="grade-form">
+                            <div class="row">
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Semester</label>
+                                    <input type="number" class="form-control" name="semester" value="{{ grade.semester }}" disabled>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Coursework</label>
+                                    <input type="number" class="form-control" name="coursework" value="{{ grade.coursework }}" step="0.1" disabled>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Final</label>
+                                    <input type="number" class="form-control" name="final" value="{{ grade.final }}" step="0.1" disabled>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" name="attended_final" value="1" {% if grade.attended_final %}checked{% endif %} disabled>
+                                        <label class="form-check-label">Attended Final</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" name="is_finalized" value="1" {% if grade.is_finalized %}checked{% endif %} disabled>
+                                        <label class="form-check-label">Finalized</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 mb-3 d-flex align-items-center">
+                                    <button type="button" class="btn btn-primary edit-btn me-2">Edit</button>
+                                    <button type="submit" class="btn btn-success save-btn" style="display: none;">Save</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-2 mb-3 d-flex align-items-center">
+                        <form method="POST" action="{{ url_for('delete_grade', student_id=student.id, subject_id=subject.id, semester=grade.semester) }}">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this grade?')">Delete</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="row mt-2">
+                    <div class="col-12">
+                    {% if grade.is_finalized %}
+                    {% set failure_type = grade.is_failed() %}
+                    {% if failure_type != "no" %}
+                    <span class="badge bg-danger">
+                        Failed: 
+                        {% if failure_type == "coursework" %}Coursework failure
+                        {% elif failure_type == "final" %}Final exam failure
+                        {% elif failure_type == "final_attendance" %}Final exam attendance failure{% endif %}
+                    </span>
+                    {% endif %}
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            No subjects enrolled yet.
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.grade-form').forEach(form => {
+    const editBtn = form.querySelector('.edit-btn');
+    const saveBtn = form.querySelector('.save-btn');
+    const inputs = form.querySelectorAll('input');
+    
+    editBtn.addEventListener('click', function() {
+        inputs.forEach(input => {
+            if (input.type !== 'checkbox' || input.name === 'attended_final' || input.name === 'is_finalized') {
+                input.disabled = false;
+            }
+        });
+        editBtn.style.display = 'none';
+        saveBtn.style.display = 'inline-block';
+    });
+});
+</script>
+{% endblock %}
